@@ -1,0 +1,14 @@
+1, 매일 아침 5시에 동기 시간 설정:
+# vi /etc/crontab
+
+다음 컨텐츠 추가
+0 5 * * * root /usr/sbin/ntpdate pool.ntp.org && /sbin/hwclock -w
+
+2, 설정 ntp. 서비스 기계를 시작
+# systemctl enable ntpd.service
+
+3, 시작 ntp. 서비스
+# systemctl start ntpd.service
+
+4, 인증 ntp. 서비스 이미 실행
+# pgrep ntpd
