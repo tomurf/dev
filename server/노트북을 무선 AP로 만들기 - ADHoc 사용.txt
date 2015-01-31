@@ -1,0 +1,61 @@
+노트북의 유선은 연결 되어 있고, 무선 랜카드가 있는 상태에서 스마트폰으로 인터넷을 3G가 아닌
+
+노트북의 무선랜 -> 유선 -> 인터넷을 사용 하는 방법이 되겠네요..
+
+
+
+
+
+준비물: 유선으로 인터넷이 연결된 노트북, 무선 랜카드(호스트된 네트워크 지원 되어야 함), 스마트폰
+
+
+
+관리자 권한으로 cmd 창을 열어놓고 다음 붉은색 배경의 명령어는 cmd 창에서 입력 합니다.
+
+
+
+1. 무선 네트웍 카드가 무선 AP로 만들 수 있는지 확인
+
+netsh wlan show drivers
+
+  => 호스트된 네트워크 지원  : 예
+
+
+
+
+2. 무선 AP로 만들기: SSID, Key는 임의 값 입력
+
+netsh wlan set hostednetwork mode=allow ssid=AdhocTest key=testtest
+
+netsh wlan start hostednetwork
+
+
+
+
+3. 이더넷 공유
+
+네트웍 등록 정보 > 이더넷 > 속성 > 공유 > 인터넷 연결 공유 > 홈 네트워킹 연결에 신규로 생성된 인터페이스 선택 (Wi-Fi 2)
+
+
+
+
+4. 스마트폰으로 접속
+
+SSID=AdhocTest
+
+암호=testtest
+
+
+
+
+5. 노트북에서 연결 된 내역 확인
+
+netsh wlan show hostednetwork
+
+
+
+
+<<명령어 실행 전의 네트워크 연결 정보>>
+
+[출처] 노트북을 무선 AP로 만들기 - ADHoc 사용|작성자 지랑
+
