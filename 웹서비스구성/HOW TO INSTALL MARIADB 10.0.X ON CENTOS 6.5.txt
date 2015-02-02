@@ -1,0 +1,86 @@
+1. Clear dependency
+yum install cmake ncurses ncurses-devel bison gcc gcc-c++ -y
+
+2. Download MariaDB Source
+wget http://ftp.kaist.ac.kr/mariadb/mariadb-10.0.15/source/mariadb-10.0.15.tar.gz
+tar vxzf mariadb-10.0.15.tar.gz
+
+3. CMake
+cmake \
+-DCMAKE_INSTALL_PREFIX=/db/mariadb \
+-DWITH_INNOBASE_STORAGE_ENGINE=1 \
+-DWITH_ARCHIVE_STORAGE_ENGINE=1 \
+-DWITH_BLACKHOLE_STORAGE_ENGINE=1 \
+-DMYSQL_DATADIR=/db/mariadb/data \
+-DWITH_PERFSCHEMA_STORAGE_ENGINE=1 \
+-DWITH_PARTITION_STORAGE_ENGINE=1 \
+-DWITH_FEDERATEDX_STORAGE_ENGINE=1 \
+-DWITH_ARIA_STORAGE_ENGINE=1 \
+-DWITH_XTRADB_STORAGE_ENGINE=1 \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DENABLED_LOCAL_INFILE=1 \
+-DWITH_EXTRA_CHARSETS=all \
+-DWITH_READLINE=1 \
+-DWITH_SSL=system \
+-DWITH_ZLIB=system
+
+make
+make install
+
+###설치 경로를 변경 하려면 -DCMAKE_INSTALL_PREFIX= 를 수정
+###Data Directory를 변경 하려면 -DMYSQL_DATADIR= 을 수정
+
+4. MariaDB 계정 생성
+adduser mysql
+
+###계정 명이 mysql이 아니면 설치가 되지 않는다.(왜죠?!)
+
+5. 시스템 테이블 생성
+/db/mariadb/scripts/mysql_install_db --user=mysql --basedir=/db/mariadb --datadir=/db/mariadb/data
+
+6. mysql 계정으로 mariadb 권한 설정
+chown -R mysql.mysql /db/mariadb
+
+7. my.cnf 복사 / 수정
+cp -pf /db/mariadb/support-files/my-innodb-heavy-4G.cnf /etc/my.cnf
+vim /etc/my.cnf
+
+....
+[mysqld]
+skip-external-locking
+character_set_server = utf8
+collation_server = utf8_general_ci
+skip_name_resolve
+#Bind Address를 지정 해야 할 경우
+bind-address=192.168.0.2
+wait_timeout=28800
+ 
+#Thread pool 사용
+thread-handling=pool-of-threads
+thread-pool-size=20
+....
+max_connections = 500
+....
+max_connect_errors = 100000
+....
+transaction-isolation=READ-COMMITTED
+....
+#CPU(Core) 개수 * 2~4
+thread_concurrency = 8
+....
+#innodb 에서 FULLTEXT Index 사용
+innodb_optimize_fulltext_only=ON
+....
+
+8. Service 등록
+cp -pf /db/mariadb/support-files/mysql.server /etc/init.d/mariadb
+chkconfig --add mariadb
+chkconfig mariadb on
+
+9. MariaDB 시작
+service mariadb start
+
+10. MariaDB root 계정 비밀번호 변경
+/db/mariadb/bin/mysqladmin -u root password 'new-password'
+/db/mariadb/bin/mysqladmin -u root -h localhost -p password 'new-password'
