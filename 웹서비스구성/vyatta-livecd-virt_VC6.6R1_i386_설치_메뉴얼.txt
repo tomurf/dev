@@ -1,0 +1,224 @@
+Vyatta 설치
+
+Basic System Configuration
+
+로그인 후 설정 모드 진입
+vyatta@vyatta:~$ configure
+[edit]
+vyatta@vyatta#
+
+### Setting the NTP
+vyatta@vyatta# set system ntp server 0.kr.pool.ntp.org
+[edit]
+vyatta@vyatta# set system ntp server 1.kr.pool.ntp.org
+[edit]
+vyatta@vyatta# set system ntp server 2.kr.pool.ntp.org
+[edit]
+
+
+### Setting the Host Name
+vyatta@vyatta# set system host‐name vR1
+[edit]
+
+
+### Setting the Domain Name
+vyatta@vyatta# set system domain‐name test.com
+[edit]
+
+
+### Changing Passwords
+vyatta@vyatta# set system login user vyatta authentication plaintext‐password 1234qwer
+[edit]
+
+
+### Configuring Interfaces
+vyatta@vyatta# set interfaces ethernet eth0 address 192.168.100.1/24
+[edit]
+
+vyatta@vyatta# show interfaces
+ethernet eth0 {
+address 192.168.100.21/24
+hw‐id 00:40:63:e2:e4:00
+}
+loopback lo {
+}
+
+
+### Configuring Access to a DNS server
+vyatta@vyatta# set system name‐server 168.126.63.1
+vyatta@vyatta# set system name‐server 164.124.101.2
+[edit]
+
+
+ ### Specifying a Default Gateway
+ vyatta@vyatta# set system gateway‐address 192.168.100.2
+[edit]
+
+
+### Enabling SSH Access
+vyatta@vyatta# set service ssh
+[edit]
+
+
+### Administrator Change
+vyatta@vyatta# set system login user radmin
+[edit]
+vyatta@vyatta# set system login user radmin level admin
+[edit]
+
+
+### Change Root password
+vyatta@vyatta# set system login user root authentication plaintext-password 1234qwer
+[edit]
+radmin@vR1# exit
+
+
+### Disable Serial Console
+radmin@vR1:~$ su - root
+Password: 
+root@vR1:~# sed -i -e '/ttyS0/s/^T0/#T0/' /etc/inittab
+root@vR1:~# exit
+radmin@vR1:~$ configure
+radmin@vR1# delete system console device ttyS0
+[edit]
+radmin@vR1# commit
+[ system console device ttyS0 ]
+Warning: Access to system console is unconfigured
+[edit]
+
+
+### Disable Floppy Device
+radmin@vR1:~$ su - root
+Password: 
+root@vR1:~# echo "blacklist floppy" >> /etc/modprobe.d/blacklist.conf
+root@vR1:~# exit
+radmin@vR1:~$
+
+
+### Configuration Commit&Save
+vyatta@vyatta# commit
+[edit]
+vyatta@vyatta# save
+Saving configuration to '/config/config.boot'...
+Done
+[edit]
+vyatta@vyatta# exit
+
+
+### Reboot
+vyatta@vyatta$ reboot
+Proceed with reboot? (Yes/No) [No] yes
+Broadcast message from root@vR1 (pts/0) (Thu Feb  5 10:21:31 2015):
+
+The system is going down for reboot NOW!
+
+
+### Administrator change & delete
+radmin@vR1:~$ configure
+radmin@vR1# delete system login user vyatta
+[edit]
+radmin@vR1#
+
+
+### Configuring DHCP Server
+vyatta@vR1# set service dhcp‐server shared‐network‐name ETH1_POOL subnet
+192.168.1.0/24 start 192.168.1.100 stop 192.168.1.199
+[edit]
+vyatta@vR1# set service dhcp‐server shared‐network‐name ETH1_POOL subnet
+192.168.1.0/24 default‐router 192.168.1.254
+[edit]
+vyatta@vR1# set service dhcp‐server shared‐network‐name ETH1_POOL subnet
+192.168.1.0/24 dns‐server 12.34.56.100
+[edit]
+vyatta@vR1# commit
+[edit]
+vyatta@vR1#
+
+vyatta@vR1# show service dhcp‐server
+shared‐network‐name ETH1_POOL {
+subnet 192.168.1.0/24 {
+start 192.168.1.100 {
+stop 192.168.1.199
+}
+dns‐server 12.34.56.100
+default‐router 192.168.1.254
+}
+}
+[edit]
+vyatta@vR1#
+
+
+### Configuring NAT
+vyatta@vR1# set nat source rule 10 source address 192.168.1.0/24
+[edit]
+vyatta@vR1# set nat source rule 10 outbound‐interface eth0
+[edit]
+vyatta@vR1# set nat source rule 10 translation address masquerade
+[edit]
+vyatta@vR1# commit
+[edit]
+vyatta@vR1#
+
+vyatta@vR1# show nat source
+rule 10 {
+outbound‐interface eth0
+source {
+address 192.168.1.0/24
+}
+translation {
+address masquerade
+}
+}
+[edit]
+vyatta@vR1#
+
+
+### Configuring Firewall
+vyatta@vR1# set firewall name FROM_INTERNET
+[edit]
+vyatta@vR1# set firewall name FROM_INTERNET rule 10
+[edit]
+vyatta@vR1# set firewall name FROM_INTERNET rule 10 action accept
+[edit]
+vyatta@vR1# set firewall name FROM_INTERNET rule 10 state established
+enable
+[edit]
+vyatta@vR1# commit
+[edit]
+vyatta@vR1#
+
+vyatta@vR1# set interfaces ethernet eth0 firewall in name FROM_INTERNET
+[edit]
+vyatta@vR1# set interfaces ethernet eth0 firewall local name FROM_INTERNET
+[edit]
+vyatta@vR1# commit
+[edit]
+vyatta@vR1#
+
+vyatta@vR1# show firewall
+name FROM_INTERNET {
+rule 10 {
+action accept
+state {
+established enable
+}
+}
+}
+[edit]
+vyatta@vR1#
+
+vyatta@vR1# show interfaces ethernet
+ethernet eth0 {
+address 192.0.2.21/24
+firewall {
+in {
+name FROM_INTERNET
+}
+local {
+name FROM_INTERNET
+}
+}
+hw‐id 00:40:63:e2:e4:00
+}
+ethernet eth1 {
+address 192.168.1.254/24
