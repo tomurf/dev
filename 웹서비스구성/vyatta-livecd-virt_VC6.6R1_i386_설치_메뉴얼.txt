@@ -1,13 +1,49 @@
 Vyatta 설치
 
+System Image Install
+
+### Login
+Welcome to vyatta - vyatta tty1
+
+vyatta login: vyatta
+password: vyatta
+
+vyatta@vyatta:~$ install image
+would you like to continue? (yes/No) [Yes]: enter
+partition (Auto/Parted/Skip) [Auto]: enter
+Install the image on? [sda]: enter
+Continue? (Yes/No) [No]: yes
+How big of a root partition should I create? (1000MB - 3221MB) [3221]MB: enter
+What would you like to name this image? [VC6.6R1]: enter
+Which one should I copy to sda? [/config/config.boot]: enter
+Enter Password for user 'vyatta': 1234qwer
+Retype Password for user 'vyatta': 1234qwer
+Which drive should GRUB modify the boot partition on? [sda]: enter
+
+### Reboot
+vyatta@vyatta$ reboot
+Proceed with reboot? (Yes/No) [No] yes
+Broadcast message from root@vR1 (pts/0) (Thu Feb  5 10:21:31 2015):
+
+The system is going down for reboot NOW!
+
+
+
 Basic System Configuration
 
-로그인 후 설정 모드 진입
+vyatta login: vyatta
+password: 1234qwer
+
 vyatta@vyatta:~$ configure
 [edit]
-vyatta@vyatta#
 
 ### Setting the NTP
+vyatta@vyatta# delete system ntp server 0.vyatta.pool.ntp.org
+[edit]
+vyatta@vyatta# delete system ntp server 1.vyatta.pool.ntp.org
+[edit]
+vyatta@vyatta# delete system ntp server 2.vyatta.pool.ntp.org
+[edit]
 vyatta@vyatta# set system ntp server 0.kr.pool.ntp.org
 [edit]
 vyatta@vyatta# set system ntp server 1.kr.pool.ntp.org
@@ -16,18 +52,17 @@ vyatta@vyatta# set system ntp server 2.kr.pool.ntp.org
 [edit]
 
 
+### Setting Time-zone
+vyatta@vyatta# set system time-zone Asia/Seoul
+[edit]
+
 ### Setting the Host Name
-vyatta@vyatta# set system host‐name vR1
+vyatta@vyatta# set system host-name vR1
 [edit]
 
 
 ### Setting the Domain Name
-vyatta@vyatta# set system domain‐name test.com
-[edit]
-
-
-### Changing Passwords
-vyatta@vyatta# set system login user vyatta authentication plaintext‐password 1234qwer
+vyatta@vyatta# set system domain-name test.com
 [edit]
 
 
@@ -35,23 +70,16 @@ vyatta@vyatta# set system login user vyatta authentication plaintext‐password 
 vyatta@vyatta# set interfaces ethernet eth0 address 192.168.100.1/24
 [edit]
 
-vyatta@vyatta# show interfaces
-ethernet eth0 {
-address 192.168.100.21/24
-hw‐id 00:40:63:e2:e4:00
-}
-loopback lo {
-}
+
+### Specifying a Default Gateway
+vyatta@vyatta# set system gateway-address 192.168.100.2
+[edit]
 
 
 ### Configuring Access to a DNS server
 vyatta@vyatta# set system name‐server 168.126.63.1
-vyatta@vyatta# set system name‐server 164.124.101.2
 [edit]
-
-
- ### Specifying a Default Gateway
- vyatta@vyatta# set system gateway‐address 192.168.100.2
+vyatta@vyatta# set system name‐server 164.124.101.2
 [edit]
 
 
@@ -65,44 +93,42 @@ vyatta@vyatta# set system login user radmin
 [edit]
 vyatta@vyatta# set system login user radmin level admin
 [edit]
+vyatta@vyatta# set system login user radmin authentication plaintext-password 1234qwer
+[edit]
 
 
 ### Change Root password
 vyatta@vyatta# set system login user root authentication plaintext-password 1234qwer
 [edit]
-radmin@vR1# exit
 
 
-### Disable Serial Console
-radmin@vR1:~$ su - root
-Password: 
-root@vR1:~# sed -i -e '/ttyS0/s/^T0/#T0/' /etc/inittab
-root@vR1:~# exit
-radmin@vR1:~$ configure
-radmin@vR1# delete system console device ttyS0
+### Delete ttyS0
+vyatta@vR1# delete system console device ttyS0
 [edit]
-radmin@vR1# commit
+vyatta@vyatta# commit
 [ system console device ttyS0 ]
 Warning: Access to system console is unconfigured
-[edit]
-
-
-### Disable Floppy Device
-radmin@vR1:~$ su - root
-Password: 
-root@vR1:~# echo "blacklist floppy" >> /etc/modprobe.d/blacklist.conf
-root@vR1:~# exit
-radmin@vR1:~$
-
-
-### Configuration Commit&Save
-vyatta@vyatta# commit
+INIT: Sending processes the TERM signal
 [edit]
 vyatta@vyatta# save
 Saving configuration to '/config/config.boot'...
 Done
 [edit]
 vyatta@vyatta# exit
+exit
+vyatta@vyatta:~$
+
+
+### Disable Serial Console
+vyatta@vyatta:~$ su - root
+Password:
+root@vR1:~# sed -i -e '/ttyS0/s/^T0/#T0/' /etc/inittab
+
+
+### Disable Floppy Device
+root@vR1:~# echo "blacklist floppy" >> /etc/modprobe.d/blacklist.conf
+root@vR1:~# exit
+vyatta@vyatta:~$
 
 
 ### Reboot
@@ -111,6 +137,18 @@ Proceed with reboot? (Yes/No) [No] yes
 Broadcast message from root@vR1 (pts/0) (Thu Feb  5 10:21:31 2015):
 
 The system is going down for reboot NOW!
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Administrator change & delete
