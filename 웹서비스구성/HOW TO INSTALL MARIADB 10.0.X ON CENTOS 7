@@ -1,0 +1,100 @@
+
+
+### CONFIGURE && COMPILE && INSTALL
+# 64bit 를 위한 설정.
+export CFLAGS='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1  -m64 -mtune=generic -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -fPIC -fno-delete-null-pointer-checks'
+export CXXFLAGS='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -specs=/usr/lib/rpm/redhat/redhat-hardened-cc1  -m64 -mtune=generic -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -fPIC -fno-delete-null-pointer-checks'
+export LDFLAGS=' -pie -Wl,-z,relro,-z,now'
+ 
+# cmake 를 이용한 configure 
+cmake \
+-DCMAKE_INSTALL_PREFIX=/usr/local/mariadb-10.0.14 \
+-DINSTALL_SYSCONFDIR=/usr/local/mariadb-10.0.14/etc \
+-DINSTALL_SYSCONF2DIR=/usr/local/mariadb-10.0.14/etc/my.cnf.d \
+-DINSTALL_DOCDIR=share/doc/mariadb-10.0.14 \
+-DINSTALL_DOCREADMEDIR=share/doc/mariadb-10.0.14 \
+-DINSTALL_INCLUDEDIR=include/mysql \
+-DINSTALL_INFODIR=share/info \
+-DINSTALL_LIBDIR=lib64/mysql \
+-DINSTALL_MANDIR=share/man \
+-DINSTALL_MYSQLSHAREDIR=share/mariadb \
+-DINSTALL_MYSQLTESTDIR=share/mysql-test \
+-DINSTALL_PLUGINDIR=lib64/mysql/plugin \
+-DINSTALL_SBINDIR=libexec \
+-DINSTALL_SCRIPTDIR=bin \
+-DINSTALL_SQLBENCHDIR=share \
+-DINSTALL_SUPPORTFILESDIR=support-files \
+-DMYSQL_DATADIR=/usr/local/mariadb-10.0.14/data \
+-DTMPDIR=/usr/local/mariadb-10.0.14/tmp \
+-DMYSQL_UNIX_ADDR=/var/lib/mariadb/mariadb.sock \
+-DPID_FILE_DIR=/var/run/mariadb \
+-DDAEMON_NAME=mariadb \
+-DENABLED_LOCAL_INFILE=ON \
+-DWITH_SSL=system \
+-DWITH_ZLIB=system \
+-DWITH_JEMALLOC=no \
+-DWITH_ARIA_STORAGE_ENGINE=ON \
+-DUSE_ARIA_FOR_TMP_TABLES=ON \
+-DWITH_PARTITION_STORAGE_ENGINE=ON \
+-DWITH_PERFSCHEMA_STORAGE_ENGINE=ON \
+-DWITH_QUERY_CACHE_INFO=ON \
+-DWITH_QUERY_RESPONSE_TIME=ON \
+-DWITH_SAFEMALLOC=AUTO \
+-DWITH_XTRADB_STORAGE_ENGINE=ON \
+-DWITH_LOCALES=ON \
+-DDEFAULT_CHARSET=utf8 \
+-DDEFAULT_COLLATION=utf8_general_ci \
+-DWITH_EXTRA_CHARSETS=all 
+ 
+# 컴파일 
+make
+# 설치
+make install
+
+# 위 설정은 다음과 같은 주요한 기능을 가집니다.
+# Aria 스토리지 엔진 지원
+# Partition 스토리지 엔진 지원
+# XtraDB 스토리지 엔진 지원
+# TokuDB 플러그인 지원
+
+### 설치 후 작업
+# mariadb systemd에 파일 설치.
+install -D -p -m 644 scripts/mysql.service /usr/lib/systemd/system/mariadb.service
+# mariadb tmpfiles.d에 파일 설치.
+install -D -p -m 0644 scripts/mysql.tmpfiles.d /usr/lib/tmpfiles.d/mariadb.conf
+# mysql 호환을 위한 systemd에 파일 설치.
+install -p -m 644 scripts/mysql-compat.service /usr/lib/systemd/system/mysql.service
+mkdir -p /usr/lib/systemd/system/mariadb.service.d
+install -p -m 644 scripts/mysql-compat.conf /usr/lib/systemd/system/mariadb.service.d/mysql-compat.conf
+# 활성화하기.
+systemctl enable mariadb
+
+install -p -m 755 scripts/mysql-prepare-db-dir /usr/local/mariadb-10.0.14/libexec/mysql-prepare-db-dir
+install -p -m 755 scripts/mysql-wait-ready /usr/local/mariadb-10.0.14/libexec/mysql-wait-ready
+install -p -m 755 scripts/mysql-check-socket /usr/local/mariadb-10.0.14/libexec/mysql-check-socket
+install -p -m 755 scripts/mysql-check-upgrade /usr/local/mariadb-10.0.14/libexec/mysql-check-upgrade
+install -p -m 644 scripts/mysql-scripts-common /usr/local/mariadb-10.0.14/libexec/mysql-scripts-common
+
+
+# MariaDB 사용을 위한 시스템 계정 생성.
+/usr/sbin/groupadd -g 27 -o -r mysql >/dev/null 2>&1
+/usr/sbin/useradd -M -N -g mysql -o -r -d /usr/local/mariadb-10.0.14/data -s /sbin/nologin -c "MariaDB Server" -u 27 mysql >/dev/null 2>&1
+# 디렉토리 소유권을 바꿔 줍니다.
+chown -R mysql /usr/local/mariadb-10.0.14/data
+chgrp -R mysql /usr/local/mariadb-10.0.14
+mkdir /usr/local/mariadb-10.0.14/tmp
+mkdir /usr/local/mariadb-10.0.14/logs
+chown mysql: /usr/local/mariadb-10.0.14/tmp /usr/local/mariadb-10.0.14/logs
+
+
+# 심볼릭 링크 만들기.
+cd /etc
+ln -s /usr/local/mariadb-10.0.14/etc/my.cnf
+ln -s /usr/local/mariadb-10.0.14/etc/my.conf.d
+# mysql_install_db 실행
+cd /usr/local/mariadb-10.0.14/
+./bin/mysql_install_db --user=mysql
+
+
+# Mariadb 시작.
+systemctl start mariadb
